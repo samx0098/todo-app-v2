@@ -6,14 +6,21 @@ import {
   Delete,
   Param,
   Body,
+  HttpStatus,
+  Res,
 } from '@nestjs/common';
 import { TodoService } from './todo.service';
 import { Todo } from './todo.entity';
 import { UpdateResult } from 'typeorm';
+import { ResponseHandlerService } from 'utils/responseHandler';
+import { Response } from 'express';
 
 @Controller('todo')
 export class TodoController {
-  constructor(private readonly todoService: TodoService) {}
+  constructor(
+    private readonly todoService: TodoService,
+    private readonly responseHandler: ResponseHandlerService,
+  ) {}
 
   //create a new todo
   @Post()
@@ -23,8 +30,23 @@ export class TodoController {
 
   //get all todos
   @Get()
-  async findAll(): Promise<Todo[]> {
-    return await this.todoService.findAll();
+  async findAll(@Res() res: Response) {
+    try {
+      const data = await this.todoService.findAll();
+      return this.responseHandler.handleResponse(res, {
+        status: HttpStatus.OK,
+        results: data,
+        // revalidate: 3600, // 1-hour cache
+      });
+    } catch (error) {
+      console.error(error);
+      return this.responseHandler.handleResponse(res, {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: 'Internal Server Error',
+        message: (error as Error).message,
+        stack: (error as Error).stack,
+      });
+    }
   }
 
   //get todo by id

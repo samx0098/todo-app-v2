@@ -1,8 +1,12 @@
+import { User } from 'src/user/user.entity';
 import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
   DeleteDateColumn,
+  TableForeignKey,
+  ManyToOne,
+  JoinTable,
 } from 'typeorm';
 
 @Entity('todos')
@@ -18,4 +22,7 @@ export class Todo {
 
   @DeleteDateColumn()
   deletedAt: Date; //stores the delete timestamp
+
+  @ManyToOne(() => User, (user) => user.todos)
+  user: User;
 }
