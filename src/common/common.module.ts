@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ResponseHandlerService } from 'utils/responseHandler';
+import { ResponseHandlerService } from 'utils/response-handler';
 
 @Module({
   providers: [ResponseHandlerService],

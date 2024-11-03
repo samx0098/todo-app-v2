@@ -7,7 +7,7 @@ export class ResponseHandlerService {
   async handleResponse(
     res: Response,
     {
-      status = HttpStatus.OK, // Default status 200
+      status = HttpStatus.OK,
       results = undefined,
       message = undefined,
       error = undefined,
@@ -45,5 +45,40 @@ export class ResponseHandlerService {
       ...(error ? { error } : {}),
       ...(stack ? { stack } : {}),
     });
+  }
+
+  //wrapper method
+  async wrap(
+    res: Response,
+    handler: () => Promise<any>,
+    options: {
+      successStatus?: number;
+      successMessage?: string;
+      errorMessage?: string;
+      revalidate?: number;
+    } = {},
+  ) {
+    const {
+      successStatus = HttpStatus.OK,
+      successMessage = 'Request succeeded',
+      errorMessage = 'An error occurred',
+      revalidate,
+    } = options;
+    try {
+      const results = await handler();
+      return this.handleResponse(res, {
+        status: successStatus,
+        results,
+        message: successMessage,
+        revalidate,
+      });
+    } catch (error) {
+      return this.handleResponse(res, {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: errorMessage,
+        message: (error as Error).message,
+        stack: (error as Error).stack,
+      });
+    }
   }
 }
