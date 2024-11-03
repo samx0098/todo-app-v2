@@ -50,25 +50,58 @@ export class ResponseHandlerService {
   //wrapper method
   async wrap(
     res: Response,
-    handler: () => Promise<any>,
+    handler: () => Promise<Record<string, any> | Array<any> | null>,
     options: {
       successStatus?: number;
       successMessage?: string;
       errorMessage?: string;
       revalidate?: number;
+      pagination?: {
+        currentPage: number;
+        pageSize: number;
+        // totalPages: number;
+        // totalCount: number;
+        // hasNextPage: boolean;
+        // hasPrevPage: boolean;
+      };
     } = {},
   ) {
     const {
       successStatus = HttpStatus.OK,
-      successMessage = 'Request succeeded',
+      successMessage, //= 'Request succeeded',
       errorMessage = 'An error occurred',
       revalidate,
+      pagination: paginationOptions,
     } = options;
     try {
       const results = await handler();
+      let pagination = undefined;
+
+      const { items, totalCount } = results as {
+        items: Array<any>;
+        totalCount: number;
+      };
+
+      const isArray = items && Array.isArray(items);
+      if (isArray) {
+        const { currentPage, pageSize } = paginationOptions;
+        const totalPages = Math.ceil(totalCount / pageSize);
+
+        pagination = {
+          currentPage,
+          totalPages,
+          totalCount,
+          hasNextPage: currentPage < totalPages,
+          hasPrevPage: currentPage > 1,
+        };
+      }
+
       return this.handleResponse(res, {
         status: successStatus,
-        results,
+        results: {
+          ...(items ? { items } : { ...results }),
+          pagination,
+        },
         message: successMessage,
         revalidate,
       });

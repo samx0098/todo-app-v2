@@ -1,19 +1,18 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Param,
   Body,
+  Controller,
+  Delete,
+  Get,
   HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
   Res,
 } from '@nestjs/common';
-import { TodoService } from './todo.service';
-import { Todo } from './todo.entity';
-import { UpdateResult } from 'typeorm';
-import { ResponseHandlerService } from 'utils/response-handler';
 import { Response } from 'express';
+import { ResponseHandlerService } from 'utils/response-handler';
+import { TodoService } from './todo.service';
 
 @Controller('todos') // (url/todos)
 export class TodoController {
@@ -22,8 +21,8 @@ export class TodoController {
     private readonly responseHandler: ResponseHandlerService,
   ) {}
 
-  //create a new todo (POST url/todos)
-  @Post()
+  //create a new todo (POST url/todos/create)
+  @Post('create')
   async create(@Body('title') title: string, @Res() res: Response) {
     return this.responseHandler.wrap(
       res,
@@ -38,11 +37,25 @@ export class TodoController {
 
   //get all todos (GET url/todos)
   @Get()
-  async findAll(@Res() res: Response) {
-    return this.responseHandler.wrap(res, () => this.todoService.findAll(), {
-      successMessage: 'Fetched all todos successfully',
-      errorMessage: 'Failed to fetch all todos',
-    });
+  async findAll(
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+    @Query('sort') sort = 'id',
+    @Query('order') order: 'ASC' | 'DESC' = 'DESC',
+    @Query('searchText') searchText = '',
+    @Res() res: Response,
+  ) {
+    return this.responseHandler.wrap(
+      res,
+      () => this.todoService.findAll(+page, +limit, sort, order, searchText),
+      {
+        errorMessage: 'Failed to fetch all todos',
+        pagination: {
+          currentPage: +page,
+          pageSize: +limit,
+        },
+      },
+    );
   }
 
   //get todo by id (GET url/todos/:id)
@@ -56,28 +69,28 @@ export class TodoController {
         return todo;
       },
       {
-        successMessage: 'Fetched todo successfully',
+        // successMessage: 'Fetched todo successfully',
         errorMessage: 'Failed to fetch todo',
       },
     );
   }
 
   //change todo status by id (PATCH url/todos/:id/status)
-  @Patch(':id/status')
-  async status(
-    @Param('id') id: number,
-    @Body('completed') completed: boolean,
-    @Res() res: Response,
-  ) {
-    return this.responseHandler.wrap(
-      res,
-      () => this.todoService.status(id, completed),
-      {
-        successMessage: 'Todo status updated successfully',
-        errorMessage: 'Failed to update todo status',
-      },
-    );
-  }
+  // @Patch(':id/status')
+  // async status(
+  //   @Param('id') id: number,
+  //   @Body('completed') completed: boolean,
+  //   @Res() res: Response,
+  // ) {
+  //   return this.responseHandler.wrap(
+  //     res,
+  //     () => this.todoService.status(id, completed),
+  //     {
+  //       successMessage: 'Todo status updated successfully',
+  //       errorMessage: 'Failed to update todo status',
+  //     },
+  //   );
+  // }
 
   //update todo description by id (PATCH url/todos/:id)
   @Patch(':id')
@@ -106,11 +119,11 @@ export class TodoController {
   }
 
   //restore todo by id (PATCH url/todos/:id/restore)
-  @Patch(':id/restore')
-  async restore(@Param('id') id: number, @Res() res: Response) {
-    return this.responseHandler.wrap(res, () => this.todoService.restore(id), {
-      successMessage: 'Todo restored successfully',
-      errorMessage: 'Failed to restore todo',
-    });
-  }
+  //   @Patch(':id/restore')
+  //   async restore(@Param('id') id: number, @Res() res: Response) {
+  //     return this.responseHandler.wrap(res, () => this.todoService.restore(id), {
+  //       successMessage: 'Todo restored successfully',
+  //       errorMessage: 'Failed to restore todo',
+  //     });
+  //   }
 }

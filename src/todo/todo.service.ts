@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, UpdateResult } from 'typeorm';
+import { Like, Repository, UpdateResult } from 'typeorm';
 import { Todo } from './todo.entity';
 
 @Injectable()
@@ -17,8 +17,25 @@ export class TodoService {
   }
 
   //get all todos
-  async findAll(): Promise<Todo[]> {
-    return await this.todoRepository.find();
+  async findAll(
+    page: number = 1,
+    limit: number = 20,
+    sort: string = 'id',
+    order: 'ASC' | 'DESC' = 'DESC',
+    searchText: string = '',
+  ): Promise<{ items: Todo[]; totalCount: number }> {
+    const skip = (page - 1) * limit;
+    const [items, totalCount] = await this.todoRepository.findAndCount({
+      where: [{ title: Like(`%${searchText}%`) }, { deletedAt: null }],
+      order: { [sort]: order },
+      skip,
+      take: limit,
+      relations: ['user'],
+      select: {
+        user: { id: true, username: true, email: true },
+      },
+    });
+    return { items, totalCount };
   }
 
   //get todo by id
