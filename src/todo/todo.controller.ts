@@ -21,7 +21,7 @@ export class TodoController {
     private readonly responseHandler: ResponseHandlerService,
   ) {}
 
-  //create a new todo (POST url/todos/create)
+  // + create a new todo (POST url/todos/create)
   @Post('create')
   async create(@Body('title') title: string, @Res() res: Response) {
     return this.responseHandler.wrap(
@@ -35,7 +35,7 @@ export class TodoController {
     );
   }
 
-  //get all todos (GET url/todos)
+  // + get all todos (GET url/todos)
   @Get()
   async findAll(
     @Query('page') page = 1,
@@ -58,7 +58,7 @@ export class TodoController {
     );
   }
 
-  //get todo by id (GET url/todos/:id)
+  // + get todo by id (GET url/todos/:id)
   @Get(':id')
   async find(@Param('id') id: number, @Res() res: Response) {
     return this.responseHandler.wrap(
@@ -68,40 +68,41 @@ export class TodoController {
         if (!todo) throw new Error('Todo not found');
         return todo;
       },
-      {
-        // successMessage: 'Fetched todo successfully',
-        errorMessage: 'Failed to fetch todo',
-      },
+      { errorMessage: 'Failed to fetch todo' },
     );
   }
 
-  //change todo status by id (PATCH url/todos/:id/status)
-  // @Patch(':id/status')
-  // async status(
-  //   @Param('id') id: number,
-  //   @Body('completed') completed: boolean,
-  //   @Res() res: Response,
-  // ) {
-  //   return this.responseHandler.wrap(
-  //     res,
-  //     () => this.todoService.status(id, completed),
-  //     {
-  //       successMessage: 'Todo status updated successfully',
-  //       errorMessage: 'Failed to update todo status',
-  //     },
-  //   );
-  // }
-
-  //update todo description by id (PATCH url/todos/:id)
+  // + update todo by id (PATCH url/todos/:id)
   @Patch(':id')
   async update(
-    @Param('id') id: number,
-    @Body('title') title: string,
     @Res() res: Response,
+    @Param('id') id: number,
+    @Body('title') title?: string,
+    @Body('completed') completed?: boolean,
+    @Body('restore') restore?: boolean,
   ) {
+    // * Parameter constricting *
+    // const option = [title, completed, restore].filter(
+    //   (param) => param !== undefined,
+    // );
+
+    // if (option.length !== 1) {
+    //   return this.responseHandler.wrap(
+    //     res,
+    //     () => Promise.reject(Error('Invalid request')),
+    //     {
+    //       errorStatus: HttpStatus.BAD_REQUEST,
+    //       errorMessage: 'Only one parameter is allowed',
+    //     },
+    //   );
+    // }
+
     return this.responseHandler.wrap(
       res,
-      () => this.todoService.update(id, title),
+      () => {
+        if (restore) return this.todoService.restore(id);
+        return this.todoService.updateTodo(id, { title, completed });
+      },
       {
         successMessage: 'Todo updated successfully',
         errorMessage: 'Failed to update todo',
@@ -109,7 +110,7 @@ export class TodoController {
     );
   }
 
-  //soft delete todo by id (DELETE url/todos/:id)
+  // + soft delete todo by id (DELETE url/todos/:id)
   @Delete(':id')
   async remove(@Param('id') id: number, @Res() res: Response) {
     return this.responseHandler.wrap(res, () => this.todoService.remove(id), {
@@ -117,13 +118,4 @@ export class TodoController {
       errorMessage: 'Failed to delete todo',
     });
   }
-
-  //restore todo by id (PATCH url/todos/:id/restore)
-  //   @Patch(':id/restore')
-  //   async restore(@Param('id') id: number, @Res() res: Response) {
-  //     return this.responseHandler.wrap(res, () => this.todoService.restore(id), {
-  //       successMessage: 'Todo restored successfully',
-  //       errorMessage: 'Failed to restore todo',
-  //     });
-  //   }
 }

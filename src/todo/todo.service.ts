@@ -10,13 +10,13 @@ export class TodoService {
     private readonly todoRepository: Repository<Todo>,
   ) {}
 
-  //create a new todo
+  // + create a new todo
   async create(title: string): Promise<Todo> {
     const newTodo = this.todoRepository.create({ title });
     return await this.todoRepository.save(newTodo);
   }
 
-  //get all todos
+  // + get all todos
   async findAll(
     page: number = 1,
     limit: number = 20,
@@ -38,37 +38,40 @@ export class TodoService {
     return { items, totalCount };
   }
 
-  //get todo by id
+  // + get todo by id
   async find(id: number): Promise<Todo> {
     return await this.todoRepository.findOneBy({ id });
   }
 
-  //change todo status by id
-  async status(id: number, completed: boolean): Promise<Todo> {
-    const todo = await this.todoRepository.findOneBy({ id });
-    if (todo) {
-      todo.completed = completed;
-      return await this.todoRepository.save(todo);
+  // * change todo status by id
+  // async updateStatus(id: number, completed: boolean): Promise<Todo> {
+  //   const todo = await this.todoRepository.findOneBy({ id });
+  //   if (todo) {
+  //     todo.completed = completed;
+  //     return await this.todoRepository.save(todo);
+  //   }
+  //   return Promise.reject(Error('Todo not found'));
+  // }
+
+  // + update todo by id
+  async updateTodo(id: number, data: Partial<Todo>): Promise<Todo> {
+    try {
+      let todo = await this.todoRepository.findOneBy({ id, deletedAt: null });
+      if (todo) {
+        todo = { ...todo, ...data };
+        return await this.todoRepository.save(todo);
+      }
+    } catch (error) {
+      return Promise.reject(error);
     }
-    return null;
   }
 
-  //update todo description by id
-  async update(id: number, title: string): Promise<Todo> {
-    const todo = await this.todoRepository.findOneBy({ id });
-    if (todo) {
-      todo.title = title;
-      return await this.todoRepository.save(todo);
-    }
-    return null;
-  }
-
-  //soft delete todo by id
+  // + soft delete todo by id
   async remove(id: number): Promise<UpdateResult> {
     return await this.todoRepository.softDelete({ id });
   }
 
-  //restore todo by id
+  // + restore todo by id
   async restore(id: number): Promise<UpdateResult> {
     return await this.todoRepository.restore(id);
   }

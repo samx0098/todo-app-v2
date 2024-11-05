@@ -1,4 +1,4 @@
-import { Injectable, HttpStatus } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { Response } from 'express';
 import { serialize } from './serialize';
 
@@ -52,6 +52,7 @@ export class ResponseHandlerService {
     res: Response,
     handler: () => Promise<Record<string, any> | Array<any> | null>,
     options: {
+      errorStatus?: number;
       successStatus?: number;
       successMessage?: string;
       errorMessage?: string;
@@ -59,16 +60,13 @@ export class ResponseHandlerService {
       pagination?: {
         currentPage: number;
         pageSize: number;
-        // totalPages: number;
-        // totalCount: number;
-        // hasNextPage: boolean;
-        // hasPrevPage: boolean;
       };
     } = {},
   ) {
     const {
+      errorStatus,
       successStatus = HttpStatus.OK,
-      successMessage, //= 'Request succeeded',
+      successMessage,
       errorMessage = 'An error occurred',
       revalidate,
       pagination: paginationOptions,
@@ -107,7 +105,7 @@ export class ResponseHandlerService {
       });
     } catch (error) {
       return this.handleResponse(res, {
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        status: errorStatus || HttpStatus.INTERNAL_SERVER_ERROR,
         error: errorMessage,
         message: (error as Error).message,
         stack: (error as Error).stack,
