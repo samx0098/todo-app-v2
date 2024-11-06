@@ -3,8 +3,9 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthMiddleware } from './auth/auth.middleware';
+import { AuthModule } from './auth/auth.module';
 import { CommonModule } from './common/common.module';
-import { AuthMiddleware } from './middleware/auth.middleware';
 import { TodoController } from './todo/todo.controller';
 import { TodoModule } from './todo/todo.module';
 import { UserModule } from './user/user.module';
@@ -26,6 +27,7 @@ import { UserModule } from './user/user.module';
     TodoModule,
     UserModule,
     CommonModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

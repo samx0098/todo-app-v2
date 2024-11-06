@@ -7,8 +7,8 @@ import {
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { UserService } from 'src/user/user.service';
 import { AuthService } from './auth.service';
-import { UserService } from './user.service';
 
 @Controller('auth') // (url/auth)
 export class AuthController {
@@ -48,11 +48,13 @@ export class AuthController {
   // + Logout route (POST /auth/logout)
   //todo: utilize response handler
   @Post('logout')
-  async logout(@Headers('token') token: string, @Res() res: Response) {
-    await this.authService.invalidateToken(token);
+  async logout(@Headers('authorization') token: string, @Res() res: Response) {
+    await this.authService.invalidateToken(token.split(' ')[1]);
     return res.status(HttpStatus.OK).json({
       status: HttpStatus.OK,
       message: 'Logout successful',
     });
   }
 }
+
+
