@@ -1,4 +1,6 @@
-require("dotenv").config()
+require("dotenv").config({
+    path: [`${__dirname}/.env.local`, `${__dirname}/.env`],
+})
 
 module.exports = {
     type: "mysql",

@@ -2,6 +2,8 @@
 
 ## Tasks
 
+-   fix get all todo, get todo by id api
+-   401 unauthorized, 403 forbidden(no token)
 -   media handling
 -   user signup
 -   email/username login

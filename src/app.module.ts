@@ -12,7 +12,18 @@ import { UserModule } from "./user/user.module"
 
 @Module({
     imports: [
-        ConfigModule.forRoot(),
+        ConfigModule.forRoot({
+            envFilePath: [".env.local", ".env"],
+            expandVariables: true,
+            validate: (config) => ({
+                MYSQL_HOST: config.MYSQL_HOST,
+                MYSQL_PORT: config.MYSQL_PORT,
+                MYSQL_USERNAME: config.MYSQL_USERNAME,
+                MYSQL_ROOT_PASSWORD: config.MYSQL_ROOT_PASSWORD,
+                MYSQL_DB: config.MYSQL_DB,
+                JWT_SECRET: config.JWT_SECRET,
+            }),
+        }),
         TypeOrmModule.forRoot({
             type: "mysql",
             host: process.env.MYSQL_HOST,
