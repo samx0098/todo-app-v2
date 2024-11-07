@@ -6,14 +6,10 @@
       "use": "@vercel/node"
     }
   ],
-  "scripts": {
-    "build": "pnpm run build",
-    "start": "node dist/src/main.js"
-  },
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/dist/src/main.js"
+      "dest": "/dist/main.js"
     }
   ]
 }
