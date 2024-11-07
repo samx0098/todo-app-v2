@@ -7,7 +7,7 @@
     }
   ],
   "scripts": {
-    "build": "npm run build",
+    "build": "pnpm run build",
     "start": "node dist/src/main.js"
   },
   "routes": [
