@@ -9,7 +9,7 @@
         "build": "nest build",
         "format": "prettier --write .",
         "seed": "ts-node -r tsconfig-paths/register ./node_modules/typeorm-seeding/dist/cli.js seed",
-        "start": "nest start",
+        "start": "node dist/src/main",
         "start:dev": "nest start --watch",
         "start:debug": "nest start --debug --watch",
         "start:prod": "node dist/src/main",
