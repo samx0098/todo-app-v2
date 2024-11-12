@@ -1,19 +1,21 @@
-import { Injectable, Logger } from "@nestjs/common"
+import { Injectable } from "@nestjs/common"
 import { InjectRepository } from "@nestjs/typeorm"
 import { SignJWT, jwtVerify } from "jose"
 import { User } from "src/user/user.entity"
-import { Repository } from "typeorm"
+import { UserService } from "src/user/user.service"
+import { Repository, UpdateResult } from "typeorm"
 import { v4 as uuidv4 } from "uuid"
 import { Auth } from "./auth.entity"
 
 @Injectable()
 export class AuthService {
     private readonly jwtSecret = process.env.JWT_SECRET
-    private readonly logger = new Logger(AuthService.name)
+    // private readonly logger = new Logger(AuthService.name)
 
     constructor(
         @InjectRepository(Auth)
         private readonly authRepository: Repository<Auth>,
+        private readonly userService: UserService,
     ) {}
 
     // + generate a JWT for a given user
@@ -67,16 +69,31 @@ export class AuthService {
         }
     }
 
-    // + Invalidate a JWT
-    async invalidateToken(token: string): Promise<void> {
+    // + invalidate a JWT
+    async invalidateToken(token: string): Promise<null> {
         try {
             const payload = await this.verifyToken(token)
             const auth = await this.authRepository.findOneByOrFail({
                 JTI: payload.jti,
             })
             await this.authRepository.update(auth.id, { revokedAt: new Date() })
+            return Promise.resolve(null)
         } catch (error) {
-            throw new Error("Something went wrong")
+            return Promise.reject("Something went wrong")
+        }
+    }
+
+    // + login a user
+    async login(email: string, password: string): Promise<{ token: string }> {
+        try {
+            const user =
+                (await this.userService.findByEmail(email)) ||
+                (await this.userService.findByUsername(email))
+            if (!user || !(await this.userService.comparePassword(password, user.password)))
+                throw new Error("Invalid email or password")
+            return { token: await this.generateToken(user) }
+        } catch (error) {
+            return Promise.reject(error)
         }
     }
 }

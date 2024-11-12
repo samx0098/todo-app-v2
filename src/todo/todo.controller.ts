@@ -3,6 +3,7 @@ import {
     Controller,
     Delete,
     Get,
+    Headers,
     HttpStatus,
     Param,
     Patch,
@@ -23,17 +24,27 @@ export class TodoController {
 
     // + create a new todo (POST url/todos/create)
     @Post("create")
-    async create(@Body("title") title: string, @Res() res: Response) {
-        return this.responseHandler.wrap(res, () => this.todoService.create(title), {
-            successStatus: HttpStatus.CREATED,
-            successMessage: "Todo created successfully",
-            errorMessage: "Failed to create todo",
-        })
+    async create(
+        @Headers("authorization") auth: string,
+        @Body("title") title: string,
+        @Res() res: Response,
+        @Body("description") description?: string,
+    ) {
+        return this.responseHandler.wrap(
+            res,
+            () => this.todoService.create(auth, title, description),
+            {
+                successStatus: HttpStatus.CREATED,
+                successMessage: "Todo created successfully",
+                errorMessage: "Failed to create todo",
+            },
+        )
     }
 
     // + get all todos (GET url/todos)
     @Get()
     async findAll(
+        @Headers("authorization") auth: string,
         @Query("page") page = 1,
         @Query("limit") limit = 20,
         @Query("sort") sort = "id",
@@ -43,7 +54,7 @@ export class TodoController {
     ) {
         return this.responseHandler.wrap(
             res,
-            () => this.todoService.findAll(+page, +limit, sort, order, searchText),
+            () => this.todoService.findAll(auth, +page, +limit, sort, order, searchText),
             {
                 errorMessage: "Failed to fetch all todos",
                 pagination: {
@@ -56,24 +67,32 @@ export class TodoController {
 
     // + get todo by id (GET url/todos/:id)
     @Get(":id")
-    async find(@Param("id") id: number, @Res() res: Response) {
+    async find(
+        @Headers("authorization") auth: string,
+        @Param("id") id: number,
+        @Res() res: Response,
+    ) {
         return this.responseHandler.wrap(
             res,
             async () => {
-                const todo = await this.todoService.find(id)
+                const todo = await this.todoService.find(auth, id)
                 if (!todo) throw new Error("Todo not found")
                 return todo
             },
-            { errorMessage: "Failed to fetch todo" },
+            { errorMessage: "Failed to fetch todo", errorStatus: HttpStatus.NOT_FOUND },
         )
     }
 
     // + update todo by id (PATCH url/todos/:id)
     @Patch(":id")
     async update(
+        @Headers("authorization") auth: string,
         @Res() res: Response,
         @Param("id") id: number,
         @Body("title") title?: string,
+        @Body("description") description?: string,
+        @Body("media") media?: string,
+        @Body("important") important?: boolean,
         @Body("completed") completed?: boolean,
         @Body("restore") restore?: boolean,
     ) {
@@ -96,8 +115,15 @@ export class TodoController {
         return this.responseHandler.wrap(
             res,
             () => {
-                if (restore) return this.todoService.restore(id)
-                return this.todoService.updateTodo(id, { title, completed })
+                if (restore) return this.todoService.restore(auth, id)
+                else
+                    return this.todoService.updateTodo(auth, id, {
+                        title,
+                        description,
+                        media,
+                        important,
+                        completed,
+                    })
             },
             {
                 successMessage: "Todo updated successfully",
@@ -108,8 +134,12 @@ export class TodoController {
 
     // + soft delete todo by id (DELETE url/todos/:id)
     @Delete(":id")
-    async remove(@Param("id") id: number, @Res() res: Response) {
-        return this.responseHandler.wrap(res, () => this.todoService.remove(id), {
+    async remove(
+        @Headers("authorization") auth: string,
+        @Param("id") id: number,
+        @Res() res: Response,
+    ) {
+        return this.responseHandler.wrap(res, () => this.todoService.remove(auth, id), {
             successMessage: "Todo deleted successfully",
             errorMessage: "Failed to delete todo",
         })

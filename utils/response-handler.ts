@@ -14,6 +14,8 @@ export class ResponseHandlerService {
             stack = undefined,
             headers = undefined,
             revalidate = undefined,
+            token = undefined,
+            pagination = undefined,
         }: {
             status?: number
             results?: Record<string, any> | Record<string, any>[]
@@ -22,20 +24,20 @@ export class ResponseHandlerService {
             stack?: string
             headers?: Record<string, string>
             revalidate?: number
+            token?: string
+            pagination?: Record<string, any>
         },
     ) {
         // Define cache control headers
         const cacheControl = `public, max-age=${revalidate ?? 0}, stale-while-revalidate=${revalidate ?? 0}`
+        res.setHeader("Cache-Control", cacheControl)
 
-        // Set optional headers on the response
+        // Set optional headers
         if (headers) {
             Object.keys(headers).forEach((key) => {
                 res.setHeader(key, headers[key])
             })
         }
-
-        // Set cache control header
-        res.setHeader("Cache-Control", cacheControl)
 
         // Send the JSON response
         return res.status(status).json({
@@ -44,10 +46,12 @@ export class ResponseHandlerService {
             ...(message ? { message } : {}),
             ...(error ? { error } : {}),
             ...(stack ? { stack } : {}),
+            ...(token ? { token } : {}),
+            ...(pagination ? { pagination } : {}),
         })
     }
 
-    //wrapper method
+    // Wrapper method
     async wrap(
         res: Response,
         handler: () => Promise<Record<string, any> | Array<any> | null>,
@@ -64,51 +68,58 @@ export class ResponseHandlerService {
         } = {},
     ) {
         const {
-            errorStatus,
+            errorStatus = HttpStatus.INTERNAL_SERVER_ERROR,
             successStatus = HttpStatus.OK,
             successMessage,
             errorMessage = "An error occurred",
             revalidate,
             pagination: paginationOptions,
         } = options
+
         try {
-            const results = await handler()
+            let results = await handler()
             let pagination = undefined
+            let token = undefined
 
-            const { items, totalCount } = results as {
-                items: Array<any>
-                totalCount: number
+            // Check for token in results
+            if (results && typeof results === "object" && "token" in results) {
+                token = results.token
+                results = null // Remove token from results
             }
 
-            const isArray = items && Array.isArray(items)
-            if (isArray) {
-                const { currentPage, pageSize } = paginationOptions
-                const totalPages = Math.ceil(totalCount / pageSize)
-
+            // Pagination logic
+            if (paginationOptions && results && "items" in results && "totalCount" in results) {
+                const { items, totalCount } = results as { items: any[]; totalCount: number }
                 pagination = {
-                    currentPage,
-                    totalPages,
+                    currentPage: paginationOptions.currentPage,
+                    pageSize: paginationOptions.pageSize,
                     totalCount,
-                    hasNextPage: currentPage < totalPages,
-                    hasPrevPage: currentPage > 1,
+                    totalPages: Math.ceil(totalCount / paginationOptions.pageSize),
+                    hasNextPage:
+                        paginationOptions.currentPage <
+                        Math.ceil(totalCount / paginationOptions.pageSize),
+                    hasPrevPage: paginationOptions.currentPage > 1,
                 }
+                results = items // Simplify `results` to only include items
             }
 
-            return this.handleResponse(res, {
+            // Response options
+            const responseOptions: Parameters<typeof this.handleResponse>["1"] = {
                 status: successStatus,
-                results: {
-                    ...(items ? { items } : { ...results }),
-                    pagination,
-                },
-                message: successMessage,
-                revalidate,
-            })
+                ...(results ? { results } : {}),
+                ...(successMessage ? { message: successMessage } : {}),
+                ...(revalidate ? { revalidate } : {}),
+                ...(pagination ? { pagination } : {}),
+                ...(token ? { token } : {}),
+            }
+
+            return this.handleResponse(res, responseOptions)
         } catch (error) {
             return this.handleResponse(res, {
-                status: errorStatus || HttpStatus.INTERNAL_SERVER_ERROR,
-                error: errorMessage,
-                message: (error as Error).message,
-                stack: (error as Error).stack,
+                status: errorStatus,
+                message: errorMessage,
+                error: error instanceof Error ? error.message : "Unknown error",
+                stack: error instanceof Error ? error.stack : undefined,
             })
         }
     }

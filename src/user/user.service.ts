@@ -11,8 +11,24 @@ export class UserService {
         private readonly userRepository: Repository<User>,
     ) {}
 
+    async signup(
+        username: string,
+        email: string,
+        password: string,
+        profileImagePath?: string,
+    ): Promise<User> {
+        password = bcrypt.hashSync(password, 10)
+        return this.userRepository.save(
+            this.userRepository.create({ username, email, password, profileImagePath }),
+        )
+    }
+
     async findByEmail(email: string): Promise<User> {
         return this.userRepository.findOneBy({ email: email })
+    }
+
+    async findByUsername(username: string): Promise<User> {
+        return this.userRepository.findOneBy({ username: username })
     }
 
     async comparePassword(password: string, hash: string): Promise<boolean> {
